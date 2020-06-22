@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>covid-19-tracker</title>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
+        <!-- HighCharts -->
+        <script src = "https://code.highcharts.com/highcharts.js"></script> 
+
+        <script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js"></script>
+
+        <!-- Chart.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+
+        <style>
+            /* body{
+                background-image: url("images/bg_img.jpg");
+                background-size:100%;
+                background-repeat: no-repeat;
+                width: auto;
+                
+            } */
+
+            table.sortable thead {
+            background-color:#eee;
+            color:#666666;
+            font-weight: bold;
+            cursor: default;
+            }
+
+            table.sortable tbody {
+            background-color:#eee;
+            color:#666666;
+            }
+
+            @media (max-width: 600px) {
+                .container-fluid {
+                    padding-left: 0px;
+                    padding-right: 0px;
+                }
+
+                .col-12{
+                    padding-left: 0px;
+                    padding-right: 0px;
+                    width: 100%;
+                    height: 100%;
+                }
+
+            }
+            
+        </style>
+
+            <script>
+                    $(document).ready(function() {
+
+                        $("#aboutUs").click(function () {
+                            $("#aboutUsModal").modal();
+                        });
+
+                        var urlIndia = "https://api.covid19india.org/data.json";
+
+                        $.getJSON(urlIndia, function(data) {
+                            //console.log(data);
+                            var total_active, total_recovered, total_deaths, total_confirmed, recovery_percentage, recovery_percentage_string, last_updated_date_time;
+                            var todayCases, todayRecovered, todayDeaths;
+                            var note;
+                            
+                            //console.log(data.statewise[0]);
+                            
+                            total_active = data.statewise[0].active;
+                            total_recovered = data.statewise[0].recovered;
+                            total_deaths = data.statewise[0].deaths;
+                            total_confirmed = data.statewise[0].confirmed;
+
+                            todayCases = "+" + data.statewise[0].deltaconfirmed;
+                            todayDeaths = "+" + data.statewise[0].deltadeaths;
+                            todayRecovered = "+" + data.statewise[0].deltarecovered;
+
+                            last_updated_date_time = "last updated : " + data.statewise[0].lastupdatedtime;    
+                            $("#last_updated").append(last_updated_date_time);                        
+
+                            $("#active").append(total_active);
+                            $("#recovered").append(total_recovered);
+                            $("#deaths").append(total_deaths);
+                            $("#confirmed").append(total_confirmed);
+
+                            $("#todayConfirmed").append(todayCases);
+                            $("#todayRecovered").append(todayRecovered);
+                            $("#todayDeaths").append(todayDeaths);
+
+                            recovery_percentage = ((total_recovered * 100)/total_confirmed).toFixed(2);
+                            recovery_percentage_string = "Recovery Rate in INDIA: " + recovery_percentage + "%";
+                            $("#recovery_rate").append(recovery_percentage_string);
+                            
+                            var states  = [];
+                            var confirmed = [];
+                            var recovered = [];
+                            var deaths = [];
+                            var active = [];
+
+                            $.each(data.statewise, function(id, obj) {
+
+                                if (obj.state != "Total") {
+                                    $("#selectState").append("<option value="+obj.statecode+">"+obj.state+"</option>");
+                                }
+
+                                if(obj.state != "State Unassigned"){
+                                    states.push(obj.state);
+                                    confirmed.push(parseFloat(obj.confirmed));
+                                    recovered.push(parseFloat(obj.recovered));
+                                    deaths.push(parseFloat(obj.deaths));
+                                    active.push(parseFloat(obj.active));
+                                }
+                            })
+
+                            //shift removes the first element of array as in this case it is given for total                            
+                            states.shift();
+                            confirmed.shift();
+                            recovered.shift();
+                            deaths.shift();
+                            active.shift();
+
+                            $("select#selectState").change(function () {
+                                $("#note").empty();
+                                $("#state_details").empty();
+                                var selectedState = $(this).children("option:selected").val();
+                                if(selectedState == "select_state") {
+                                    var state_note = "<b>Please select a state first</b>";
+                                    $("#note").append(state_note);
+                                }
+                                if (selectedState != "select_state") {
+                                    $.each(data.statewise, function (id, obj) {
+                                        if((obj.statecode) == (selectedState)) {
+                                            //console.log(obj);
+                                            var state_recovery_rate = ((obj.recovered * 100) / obj.confirmed).toFixed(2);
+                                            state_details_string = "<b><h5><u>SELECTED STATE DETAILS:- </u></h5> state name: " + obj.state + "<br> confirmed: " + obj.confirmed + 
+                                            " (+" + obj.deltaconfirmed + ")" + "<br> active: " + obj.active + "<br> recovered: " + obj.recovered + 
+                                            " (+" + obj.deltarecovered + ")" + "<br> deceased: " + obj.deaths + " (+" + obj.deltadeaths + ")" + "<br> recovery rate: " + 
+                                            state_recovery_rate + "<br> last updated: " + obj.lastupdatedtime + "<br> migrated to other: " + obj.migratedother + "</b>";
+
+                                            $("#state_details").append(state_details_string);
+                                            if(obj.statenotes != "") {
+                                                var state_note = "<b>Note from the selected state: " + obj.statenotes + "</b>";            
+                                                $("#note").append(state_note);
+                                            }
+                                        }
+                                    })
+                                }
+                            })
+
+                            //highcharts
+                            var chart = {
+                                backgroundColor: '#DCDCDC',
+                                type: 'line',
+                                zoomType: 'x'
+                            };
+
+                             var title = {
+                                text: 'covid-19 tracker india',
+                                style: { "color": "	#00008B", "fontWeight": "bold"}
+                            };
+                            var subtitle = {
+                                text: 'Source: https://api.covid19india.org/data.json',
+                                style: { "color": "#00008B" }
+                            };
+
+                            var xAxis = {
+                                categories: states,
+                                title: {
+                                    text: 'States ->'
+                                }
+                            };
+                            var yAxis = {
+                                title: {
+                                    text: 'No. of Cases ->'
+                                },
+                                plotLines: [{
+                                    value: 0,
+                                    width: 1,
+                                    color: '#808080'
+                                }]
+                            };
+                            var tooltip = {
+                                formatter: function () {
+                                    return 'State: <b>' + this.x +
+                                        '</b> <br>No. of <b>' + this.series.name + ': ' + this.y;
+                                }
+                            }
+                            var legend = {
+                                layout: 'horizontal',
+                                align: 'center',
+                                verticalAlign: 'top',
+                                borderWidth: 0
+                            };
+
+                            var series = [{
+                                name: 'confirmed cases',
+                                data: confirmed,
+                                color: "yellow"
+                            },
+                            {
+                                name: 'active cases',
+                                data: active,
+                                color: "blue"
+                            },
+                            {
+                                name: 'recovered cases',
+                                data: recovered,
+                                color: "green"
+                            },
+                            {
+                                name: 'deaths cases',
+                                data: deaths,
+                                color: "red"
+                            }
+                            ];
+
+                            //console.log(recovered);
+                            
+                            var credits = {
+                                enabled: false
+                            };
+
+                            var responsive = {
+                                rules: [{
+                                    condition: {
+                                        maxWidth: 1200
+                                    },
+                                    chartOptions: {
+                                        rangeSelector: {
+                                            inputEnabled: false
+                                        }
+                                    }
+                                }]
+                            };
+
+                            var json = {};
+                            json.title = title;
+                            json.subtitle = subtitle;
+                            json.xAxis = xAxis;
+                            json.yAxis = yAxis;
+                            json.tooltip = tooltip;
+                            json.legend = legend;
+                            json.credits = credits;
+                            json.series = series;
+                            json.responsive = responsive;
+                            json.chart = chart;
+
+                            $('#chart_container').highcharts(json);
+
+                        })
+
+                        $("select#selectState").change(function () {
+                            $("#selectDistrict").empty();
+                            var selectedState = $(this).children("option:selected").val();
+
+                            if (selectedState == "select_state") {
+                                $("#select_district").append('<option value="select_district">Select District</option>');
+                            }
+
+                            if(selectedState != "select_state") {
+
+                            var urlIndiaDistrict = "https://api.covid19india.org/state_district_wise.json";
+
+                                $.getJSON(urlIndiaDistrict, function (data) {
+                                    //console.log(data);
+                                    $.each(data, function(id, obj) {
+                                        //console.log(obj);
+                                        if(selectedState == obj.statecode) {
+                                            //console.log(obj.districtData);
+                                            $("#select_district").empty();
+                                            $.each(obj.districtData, function(district_name, district_data) {
+                                                //console.log(district_name);
+                                                $("#selectDistrict").append("<option value=" + district_name + ">" + district_name + "</option>");
+                                            })
+                                        }
+                                    })
+                                })
+                            }
+                        })
+
+
+                        $("select#selectDistrict").change(function () {
+                            $("#district_details").empty();
+                            //select using text value or to get the full name ie., after the space as well
+                            var selectedDistrict = $("#selectDistrict option:selected").text();
+
+                            if(selectedDistrict == "select_district") {
+                                $("#district_details").append("Please select a district");
+                            }
+
+                            if(selectedDistrict != "select_district") {
+                                var urlIndiaDistrict = "https://api.covid19india.org/state_district_wise.json";
+
+                                $.getJSON(urlIndiaDistrict, function (data) {
+                                    //console.log(data);
+                                    $.each(data, function(id, obj) {
+                                        //console.log(obj);
+                                        
+                                        //console.log(obj.districtData);
+                                            $.each(obj.districtData, function(district_name, district_data) {
+                                                if(selectedDistrict == district_name) {
+                                                   //console.log(district_name);
+                                                    //console.log(district_data);
+                                                    var district_recovery_rate = ((district_data.recovered * 100) / district_data.confirmed).toFixed(2);
+                                                    district_details_string = "<b><h5><u>SELECTED DISTRICT DETAILS:- </u></h5> district name: " + district_name + "<br> confirmed: " + 
+                                                    district_data.confirmed + " (+" + district_data.delta.confirmed + ")" + "<br> active: " + district_data.active + "<br> recovered: " + 
+                                                    district_data.recovered + " (+" + district_data.delta.recovered + ")" + "<br> deceased: " + district_data.deceased + 
+                                                    " (+" + district_data.delta.deceased + ")" + "<br> recovery rate: " + district_recovery_rate + "</b>";
+
+                                                    $("#district_details").append(district_details_string);
+                                                }
+                                            })
+                                    })
+                                })
+                            }
+                        })
+
+                        //to show the worldwide-data navs accordingly
+                        $(".nav-tabs a").click(function(){
+                            $(this).tab('show');
+                        });
+
+                        var urlCountries = "https://corona.lmao.ninja/v2/countries";
+
+                        $.getJSON(urlCountries, function(data) {
+                            //console.log(data);
+                            $.each(data, function(data_id, data_val) {
+                                //console.log(data_val);
+
+                                $("#worldWide").append("<option value="+data_val.country+">"+data_val.country+"</option>")
+
+                                var table_body = '<tr><td>'+data_val.country+'</td><td>'+
+                                data_val.continent+'</td><td>'+data_val.cases+'</td><td>'+data_val.active+
+                                '</td><td>'+data_val.recovered+'</td><td>'+data_val.deaths+'</td><td>'+
+                                data_val.critical+'</td><td>'+data_val.tests+'</td><td>'+data_val.population+
+                                '</td></tr>';
+
+                                $('table').find('tbody').append(table_body);
+                                //$(table_body).appendTo($("#world_record_table"));
+                                //$("#world_record_table tbody").append(table_body);
+                                
+                            })
+                        })
+
+                        var world_active, world_recovered, world_deaths, world_confirmed, world_recovery_percentage_string;
+                        var world_total_critical, world_total_tests, world_total_population;
+                        var worlTtodayCases, worldTodayRecovered, worldTodayDeaths;
+
+                        var selectedCountry = $("#worldWide option:selected").text();
+
+                        if(selectedCountry == "Worldwide") {
+                            
+                            $.getJSON("https://corona.lmao.ninja/v2/all", function(result_data) {
+                                //console.log(data);
+                                world_recovery_percentage_string = " (" + ((result_data.recovered * 100) / result_data.cases).toFixed(2) + "%)";
+
+                                world_total_active = result_data.active;
+                                world_total_recovered = result_data.recovered;
+                                world_total_deaths = result_data.deaths;
+                                world_total_confirmed = result_data.cases;
+                                world_total_critical = result_data.critical;
+                                world_total_tests = result_data.tests;
+                                world_total_population = result_data.population;
+
+                                worldTodayCases = "+" + result_data.todayCases;
+                                worldTodayDeaths = "+" + result_data.todayDeaths;
+                                worldTodayRecovered = "+" + result_data.todayRecovered;
+
+                                $("#recovered_string").append(world_recovery_percentage_string);
+
+                                $("#world_active").append(parseFloat(world_total_active) + "<br>critical: " + world_total_critical);
+                                $("#world_recovered").append(parseFloat(world_total_recovered));
+                                $("#world_deaths").append(parseFloat(world_total_deaths));
+                                $("#world_confirmed").append(parseFloat(world_total_confirmed));
+
+                                $("#world_todayConfirmed").append(worldTodayCases);
+                                $("#world_todayRecovered").append(worldTodayRecovered);
+                                $("#world_todayDeaths").append(worldTodayDeaths);
+                            
+                                //chart.js
+                                $('#worldwide_chart').replaceWith($('<canvas id="worldwide_chart" style="height: 400px; width: 600px;"></canvas>'));
+                                var canvas = document.getElementById('worldwide_chart');
+                                /*if (window.bar != undefined)
+                                    window.bar.destroy();
+                                    
+                                window.bar = new Chart(canvas, {//});*/
+                                var myChart = new Chart(canvas, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: ["confirmed", "active", "deceased", "recovered", "critical"],
+                                        datasets: [{
+                                            label: 'Worldwide',
+                                            data: [world_total_confirmed, world_total_active, world_total_deaths, world_total_recovered, world_total_critical],
+                                            backgroundColor: [
+                                                'khaki',
+                                                'lightblue',
+                                                'lightcoral',
+                                                'lightgreen',
+                                                'orange'
+                                            ],
+                                            borderColor: [
+                                                'yellow',
+                                                'darkblue',
+                                                'red',
+                                                'darkgreen',
+                                                'orangered'
+                                            ],
+                                            borderWidth: 1
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        scales: {
+                                            xAxes: [{
+                                                ticks: {
+                                                    maxRotation: 90,
+                                                    minRotation: 80
+                                                }
+                                            }],
+                                            yAxes: [{
+                                                ticks: {
+                                                    beginAtZero: true
+                                                }
+                                            }]
+                                        }
+                                    }
+                                });
+                                
+                            })
+                        }
+
+                        $("select#worldWide").change(function () {
+                            
+                            $("#world_active").empty();
+                            $("#world_recovered").empty();
+                            $("#world_deaths").empty();
+                            $("#world_confirmed").empty();
+                            $("#world_todayConfirmed").empty();
+                            $("#world_todayRecovered").empty();
+                            $("#world_todayDeaths").empty();
+                            $("#recovered_string").empty();
+                            $("#worldwide_chart").load(window.location.href + " #worldwide_chart");
+
+                            var selectedCountry = $("#worldWide option:selected").text();
+                            
+                            if(selectedCountry == "Worldwide") {
+                                $.getJSON("https://corona.lmao.ninja/v2/all", function(result_data) {
+                                    //console.log(data);
+                                    world_recovery_percentage_string = "(" + ((result_data.recovered * 100) / result_data.cases).toFixed(2) + "%)";
+
+                                   
+                                    world_total_active = result_data.active;
+                                    world_total_recovered = result_data.recovered;
+                                    world_total_deaths = result_data.deaths;
+                                    world_total_confirmed = result_data.cases;
+                                    world_total_critical = result_data.critical;
+                                    world_total_tests = result_data.tests;
+                                    world_total_population = result_data.population;
+
+                                    worldTodayCases = "+" + result_data.todayCases;
+                                    worldTodayDeaths = "+" + result_data.todayDeaths;
+                                    worldTodayRecovered = "+" + result_data.todayRecovered;
+
+                                    $("#recovered_string").append(world_recovery_percentage_string);
+
+                                    $("#world_active").append(parseFloat(world_total_active) + "<br>critical: " + world_total_critical);
+                                    $("#world_recovered").append(parseFloat(world_total_recovered));
+                                    $("#world_deaths").append(parseFloat(world_total_deaths));
+                                    $("#world_confirmed").append(parseFloat(world_total_confirmed));
+
+                                    $("#world_todayConfirmed").append(worldTodayCases);
+                                    $("#world_todayRecovered").append(worldTodayRecovered);
+                                    $("#world_todayDeaths").append(worldTodayDeaths);
+
+                                    //chart.js
+                                    
+                                    if (window.bar != undefined)
+                                        window.bar.destroy();
+                                    $('#worldwide_chart').replaceWith($('<canvas id="worldwide_chart" style="height: 400px; width: 600px;"></canvas>'));
+                                    var canvas = document.getElementById('worldwide_chart');
+                                    window.bar = new Chart(canvas, {//});
+                                //var myChart = new Chart(canvas, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: ["confirmed", "active", "deceased", "recovered", "critical"],
+                                            datasets: [{
+                                                label: 'Worldwide',
+                                                data: [world_total_confirmed, world_total_active, world_total_deaths, world_total_recovered, world_total_critical],
+                                                backgroundColor: [
+                                                    'khaki',
+                                                    'lightblue',
+                                                    'lightcoral',
+                                                    'lightgreen',
+                                                    'orange'
+                                                ],
+                                                borderColor: [
+                                                    'yellow',
+                                                    'darkblue',
+                                                    'red',
+                                                    'darkgreen',
+                                                    'orangered'
+                                                ],
+                                                borderWidth: 1
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            scales: {
+                                                xAxes: [{
+                                                    ticks: {
+                                                        maxRotation: 90,
+                                                        minRotation: 80
+                                                    }
+                                                }],
+                                                yAxes: [{
+                                                    ticks: {
+                                                        beginAtZero: true
+                                                    }
+                                                }]
+                                            }
+                                        }
+                                    });
+                                })
+                            }
+
+                            if(selectedCountry != "Worldwide") {
+                                $.getJSON("https://corona.lmao.ninja/v2/countries/"+selectedCountry, function(result_data) {
+                                    //console.log(data);
+                                    world_recovery_percentage_string = "(" + ((result_data.recovered * 100) / result_data.cases).toFixed(2) + "%)";
+
+                                    
+                                    world_total_active = result_data.active;
+                                    world_total_recovered = result_data.recovered;
+                                    world_total_deaths = result_data.deaths;
+                                    world_total_confirmed = result_data.cases;
+                                    world_total_critical = result_data.critical;
+                                    world_total_tests = result_data.tests;
+                                    world_total_population = result_data.population;
+
+                                    worldTodayCases = "+" + result_data.todayCases;
+                                    worldTodayDeaths = "+" + result_data.todayDeaths;
+                                    worldTodayRecovered = "+" + result_data.todayRecovered;
+
+                                    $("#recovered_string").append(world_recovery_percentage_string);
+
+                                    $("#world_active").append(parseFloat(world_total_active) + "<br>critical: " + world_total_critical);
+                                    $("#world_recovered").append(parseFloat(world_total_recovered));
+                                    $("#world_deaths").append(parseFloat(world_total_deaths));
+                                    $("#world_confirmed").append(parseFloat(world_total_confirmed));
+
+                                    $("#world_todayConfirmed").append(worldTodayCases);
+                                    $("#world_todayRecovered").append(worldTodayRecovered);
+                                    $("#world_todayDeaths").append(worldTodayDeaths);
+
+                                    //chart.js
+                                    
+                                    if (window.bar != undefined)
+                                        window.bar.destroy();
+                                    $('#worldwide_chart').replaceWith($('<canvas id="worldwide_chart" style="height: 400px; width: 600px;"></canvas>'));
+                                    var canvas = document.getElementById('worldwide_chart');
+                                    window.bar = new Chart(canvas, {//});
+                                //var myChart = new Chart(canvas, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: ["confirmed", "active", "deceased", "recovered", "critical"],
+                                            datasets: [{
+                                                label: "Country: "+ $("#worldWide option:selected").text(),
+                                                data: [world_total_confirmed, world_total_active, world_total_deaths, world_total_recovered, world_total_critical],
+                                                backgroundColor: [
+                                                    'khaki',
+                                                    'lightblue',
+                                                    'lightcoral',
+                                                    'lightgreen',
+                                                    'orange'
+                                                ],
+                                                borderColor: [
+                                                    'yellow',
+                                                    'darkblue',
+                                                    'red',
+                                                    'darkgreen',
+                                                    'orangered'
+                                                ],
+                                                borderWidth: 1
+                                            }]
+                                        },
+                                        options: {
+                                            responsive: true,
+                                            scales: {
+                                                xAxes: [{
+                                                    ticks: {
+                                                        maxRotation: 90,
+                                                        minRotation: 80
+                                                    }
+                                                }],
+                                                yAxes: [{
+                                                    ticks: {
+                                                        beginAtZero: true
+                                                    }
+                                                }]
+                                            }
+                                        }
+                                    });
+                                })
+                                
+                            }
+
+                        })
+
+                    });
+            </script>
+
+            </head>
+
+            <body>
+                <header>
+                    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                        <a class="navbar-brand font-weight-bold" href="#">COVID-19-TRACKER</a>
+                
+                        <!-- Toggler/collapsibe Button/hamburger menu -->
+                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#collapsibleNavbar">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <div class="collapse navbar-collapse" id="collapsibleNavbar">
+                            <ul class="navbar-nav ml-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link text-light" href="#" id="aboutUs">AboutUs</a>
+                                </li>
+                                <li class="nav-item" hidden>
+                                    <a class="nav-link text-light" href="#">LogIn</a>
+                                </li>
+                                <li class="nav-item" hidden>
+                                    <a class="nav-link text-light" href="#"><span class="fa fa-user-o"></span>SignUp</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                </header>
+
+                <!-- content section -->
+                <section>
+                    <div class="container">
+                        <!-- more margin/spacing than container-fluid -->
+                        <div class="text-center font-weight-bold" style="margin-top: 25px; background-color: deepskyblue; color: navy;">
+                        <h1>Cases of India - Details</h1>
+                        <h5 id="recovery_rate"></h5>
+                        <h7 id="last_updated"></h7>
+                        </div>
+                        <div style="margin-bottom: 25px;"></div>
+
+                        <div class="row">
+
+                            <div class="col-lg-3 col-sm-3 col-12 text-warning" style="border: 3px solid yellow;">
+                                <h5 class="text-center text-capitalize font-weight-bold text-warning" style="margin-top: 25px;">Confirmed</h5>
+                                    <p class="text-center font-weight-bold text-warning" id="confirmed"></p>
+                                    <p class="text-center text-warning" id="todayConfirmed"></p>
+                            </div>
+
+                            <div class="col-lg-3 col-sm-3 col-12 text-infi" style="border: 3px solid blue;">
+                                <h5 class="text-center text-capitalize font-weight-bold text-info" style="margin-top: 25px;">Active</h5>
+                                <p class="text-center font-weight-bold text-info" id="active"></p>
+                            </div>
+
+                            <div class="col-lg-3 col-sm-3 col-12text-success" style="border: 3px solid green;">
+                                <h5 class="text-center text-capitalize font-weight-bold text-success" style="margin-top: 25px;">Recovered</h5>
+                                    <p class="text-center font-weight-bold text-success" id="recovered"></p>
+                                    <p class="text-center text-success" id="todayRecovered"></p>
+                            </div>
+
+                            <div class="col-lg-3 col-sm-3 col-12 text-danger" style="border: 3px solid red;">
+                                <h5 class="text-center text-capitalize font-weight-bold text-danger" style="margin-top: 25px;">Deceased</h5>
+                                <p class="text-center font-weight-bold text-danger" id="deaths"></p>
+                                <p class="text-center text-danger" id="todayDeaths"></p>
+                            </div>
+
+                            <div id="chart_container" style="width: 1200px; height: 400px; margin-top: 25px;"></div>
+
+                            <div style="margin-top: 25px; width: 1200px;">
+                                <h3 class="text-center font-weight-bold text-capitalize" style="background-color: deepskyblue; color: navy;">Get more info about your region</h3>
+                                <div class="row" style="margin-top: 25px; color: navy;">
+                                    <div class="col-lg-6 col-sm-6 col-12" id="select_state_container">
+                                        <span class="font-weight-bold">STATE: </span>
+                                        <select class="form-control" id="selectState">
+                                            <option value="select_state">Select State</option>
+                                        </select>
+                                        <div class="row" style="color: navy; margin-top: 25px; margin-left: 25px; margin-right: 25px;" id="state_details"></div>
+                                    </div>
+                                    
+                                    <div class="col-lg-6 col-sm-6 col-12" id="select_district_container">
+                                        <span class="font-weight-bold">DISTRICT: </span>
+                                        <select class="form-control" id="selectDistrict">
+                                            <option value="select_district">Select District</option>
+                                        </select>
+                                        <div class="row" style="color: navy; margin-top: 25px; margin-left: 25px; margin-right: 25px;"id="district_details"></div>
+                                    </div>
+
+                                </div>
+                                <br>
+                                <div class="row" style="color: brown; margin-left: 25px; margin-right: 25px;" id="note"></div>
+                            </div>
+                        </div>
+
+                        </div>
+                    </div>
+                </section>
+                <hr style="border-top: 1px dashed black;">
+
+                <!-- Form using Model JOIN NOW SECTION -->
+                <section style="background-color: cornflowerblue; color: navy;">
+                    <article>
+                        <!-- py-5 mean PADDING OF 5 FROM TOP AND DOWN  -->
+                        <div class="container-fluid tab-content border mb-3">
+                            <h3 class="text-center font-weight-bold">World Covid-19 Tracker</h3>
+
+                              <!-- Nav tabs -->
+                              <ul class="nav nav-tabs">
+                                  <li class="nav-item">
+                                      <a class="nav-link font-weight-bold text-dark active"
+                                          href="#menu1">country-wise</a>
+                                  </li>
+                                  <li class="nav-item">
+                                      <a class="nav-link font-weight-bold text-dark" href="#menu2">worldwide</a>
+                                  </li>
+                              </ul>
+                            
+                            <!-- Tab panes -->
+                            <div class="tab-content border mb-3">
+
+                                <div class="container tab-pane active" id="menu1" style="background-color: white; margin-top: 25px; margin-bottom: 25px;"><br>
+                                    <h3 class="text-capitalize font-weight-bold text-capitalize text-dark">Country-Wise Details: </h3>
+                                    
+                                        <div style="margin-top: 25px;">
+                                            <select class="form-control" id="worldWide">
+                                                <option value="all">Worldwide</option>
+                                            </select>
+                                        </div>
+                                        <div class="row" style="margin-top: 25px;">
+                                                <div class="col-lg-3 col-sm-3 col-12" id="worldWide_details">
+                                                    <div class="bg-warning text-light" style="border: 1px solid white;">
+                                                        <h5 class="text-center text-capitalize font-weight-bold" style="margin-top: 25px;">Confirmed</h5>
+                                                        <p class="text-center font-weight-bold" id="world_confirmed"></p>
+                                                        <p class="text-center" id="world_todayConfirmed"></p>
+                                                    </div>
+
+                                                <div class="bg-info text-light" style="border: 1px solid white;">
+                                                    <h5 class="text-center text-capitalize font-weight-bold" style="margin-top: 25px;">Active</h5>
+                                                    <p class="text-center font-weight-bold" id="world_active"></p>
+                                                </div>
+                                            
+                                                <div class="bg-success text-light" style="border: 1px solid white;">
+                                                    <h5 class="text-center text-capitalize" style="margin-top: 25px;"><b>Recovered</b><span id="recovered_string"></span></h5>
+                                                    <p class="text-center font-weight-bold" id="world_recovered"></p>
+                                                    <p class="text-center" id="world_todayRecovered"></p>
+                                                </div>
+
+                                                <div class="bg-danger text-light" style="border: 1px solid white;">
+                                                    <h5 class="text-center text-capitalize font-weight-bold"  style="margin-top: 25px;">Deceased</h5>
+                                                    <p class="text-center font-weight-bold" id="world_deaths"></p>
+                                                    <p class="text-center" id="world_todayDeaths"></p>
+                                                </div>
+                                            </div>
+                                        
+                                    
+                                        <div class="col-lg-9 col-sm-9 col-12" style="width: 600px; height: 400px;">
+                                            <canvas id="worldwide_chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                                <div class="row container tab-pane fade" id="menu2"><br>
+                                    <h3 class="text-capitalize font-weight-bold text-center text-capitalize text-dark">Worldwide Data Table</h3>
+                                    <div class="row">
+                                        <div class="col-lg-2 col-sm-2 col-12"></div>
+                                        <div class="col-lg-10 col-sm-10 col-12">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-striped table-bordered table-sm sortable" cellspacing="0" width="100%" id=" world_table_record">
+                                                    <thread>
+                                                        <tr>
+                                                            <th>country</th>
+                                                            <th>continent</th>
+                                                            <th>confirmed</th>
+                                                            <th>active</th>
+                                                            <th>recovered</th>
+                                                            <th>deceased</th>
+                                                            <th>critical</th>
+                                                            <th>tests</th>
+                                                            <th>population</th>
+                                                        </tr>
+                                                    </thread>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>  
+                                        </div>
+                                    </div>                             
+                                </div>
+                            </div>
+
+                            <!-- The Modal -->
+                            <div class="modal fade" id="aboutUsModal">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        
+                                        <!-- Modal Header -->
+                                        <div class="modal-header" style="background-color: teal; color:white;"
+                                            <h4 class="modal-title">About Us</h4>
+                                            <button type="button" class="close" data-dismiss="modal">×</button>
+                                        </div>
+                                
+                                        <div style="background-color: lightblue;">
+                                            <!-- Modal body -->
+                                            <div class="modal-body">
+                                                <!-- //header -->
+                                                
+                                                <!-- team -->
+                                                <div class="team-info">
+                                                    <h3 class="mt-md-4 mt-3"><span class="sub-tittle-team"><strong>Aspiring Developer</strong><br>Hi I am Antora Ghosh
+                                                            and<br>You are welcome to
+                                                            <strong>Covid-19-Tracker</strong> ......<br>It is a small application where you can data of INDIA as well as
+                                                            WORLDWIDE.<br>The data is fetched through apis that is available online and is made solely for study purpose.
+                                                </div>
+                                            </div>
+                                            <!-- //team -->
+                                            
+                                            <!-- newsletter -->
+                                            
+                                            <!-- footer -->
+                                                    <div class="modal-footer">
+                                                        <div class="row bg-dark text-light">
+                                                            <div class="col-lg-6 col-sm-6 col-12 footer_left">
+                                                                <h3 class="mb-sm-4 mb-3">Information</h3>
+                                                                <ul style="text-decoration: none;">
+                                                                    <li><a href="#">About</a></li>
+                                                                    <li><a href="#stats">What We Do</a></li>
+                                                                    <li><a href="#">Privacy Policy</a></li>
+                                                                    <li><a href="#">Terms & Conditions</a></li>
+                                                                </ul>
+                                                            </div>
+                                                            <div class="col-lg-6 col-sm-6 col-12 mt-lg-0 mt-5 footer_right">
+                                                                <h3 class="mb-sm-4 mb-3">Contact Details</h3>
+                                                                <p> <span class="fa mr-1 fa-envelope"></span> <a
+                                                                        href="mailto:antora1245@gmail.com">antora1245@gmail.com</a></p>
+                                                                <p>
+                                                                    <li class="mr-3 icons"><span class="fa fa-instagram" style="color:gray"> instagram:
+                                                                            antora.ghosh</span></a></li>
+                                                                </p>
+                                                                <p>
+                                                                    <li class="mr-3 icons"><span class="fa fa-linkedin" style="color:gray"> LinkedIn: Antora
+                                                                            Ghosh</span></a></li>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                            <!-- //footer -->
+
+                                        </div>
+                            
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </article>
+                </section>
+
+    </body>
+</html>
