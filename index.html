@@ -146,7 +146,7 @@
                                             state_details_string = "<b><h5><u>SELECTED STATE DETAILS:- </u></h5> state name: " + obj.state + "<br> confirmed: " + obj.confirmed + 
                                             " (+" + obj.deltaconfirmed + ")" + "<br> active: " + obj.active + "<br> recovered: " + obj.recovered + 
                                             " (+" + obj.deltarecovered + ")" + "<br> deceased: " + obj.deaths + " (+" + obj.deltadeaths + ")" + "<br> recovery rate: " + 
-                                            state_recovery_rate + "<br> last updated: " + obj.lastupdatedtime + "<br> migrated to other: " + obj.migratedother + "</b>";
+                                            state_recovery_rate + "%<br> last updated: " + obj.lastupdatedtime + "<br> migrated to other: " + obj.migratedother + "</b>";
 
                                             $("#state_details").append(state_details_string);
                                             if(obj.statenotes != "") {
@@ -316,7 +316,7 @@
                                                     district_details_string = "<b><h5><u>SELECTED DISTRICT DETAILS:- </u></h5> district name: " + district_name + "<br> confirmed: " + 
                                                     district_data.confirmed + " (+" + district_data.delta.confirmed + ")" + "<br> active: " + district_data.active + "<br> recovered: " + 
                                                     district_data.recovered + " (+" + district_data.delta.recovered + ")" + "<br> deceased: " + district_data.deceased + 
-                                                    " (+" + district_data.delta.deceased + ")" + "<br> recovery rate: " + district_recovery_rate + "</b>";
+                                                    " (+" + district_data.delta.deceased + ")" + "<br> recovery rate: " + district_recovery_rate + "%</b>";
 
                                                     $("#district_details").append(district_details_string);
                                                 }
