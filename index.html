@@ -160,7 +160,7 @@
 
                             //highcharts
                             var chart = {
-                                backgroundColor: '#DCDCDC',
+                                backgroundColor: '#BDEDFF',
                                 type: 'line',
                                 zoomType: 'x'
                             };
@@ -178,9 +178,15 @@
                                 categories: states,
                                 title: {
                                     text: 'States ->'
-                                }
+                                },
                             };
+
                             var yAxis = {
+                                crosshair: {
+                                    enable: true,
+                                    color: '#79BAEC',
+                                    width: 3
+                                },
                                 title: {
                                     text: 'No. of Cases ->'
                                 },
@@ -191,7 +197,11 @@
                                 }]
                             };
                             var tooltip = {
-                                crosshairs: true,
+                                crosshairs: {
+                                    enable: true,
+                                    color: '#79BAEC',
+                                    width: 3
+                                    },
                                 shared: true,
                                 /*formatter: function () {
                                     return 'State: <b>' + this.x +
