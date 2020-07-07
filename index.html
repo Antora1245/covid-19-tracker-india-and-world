@@ -191,10 +191,13 @@
                                 }]
                             };
                             var tooltip = {
-                                formatter: function () {
+                                crosshairs: true,
+                                shared: true,
+                                /*formatter: function () {
                                     return 'State: <b>' + this.x +
                                         '</b> <br>No. of <b>' + this.series.name + ': ' + this.y;
-                                }
+                                }*/ 
+                                //as crosshairs and shared will work without formatter function
                             }
                             var legend = {
                                 layout: 'horizontal',
